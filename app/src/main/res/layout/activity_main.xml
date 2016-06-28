@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/colorPrimary"
+    tools:context="com.brucetoo.drawerview.MainActivity">
+
+    <com.brucetoo.drawerview.DrawerLayout
+        android:id="@+id/drawer_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:contentView="@+id/content_view"
+        app:dragMaxWidth="200dp"
+        app:dragView="@+id/drawer_view"
+        app:maskEnable="true"
+        app:maskColor="#55000000">
+
+        <!--content layout-->
+        <RelativeLayout
+            android:id="@+id/content_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/content_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:gravity="center"
+                android:text="I'm Content,\nClick me to show drawer view"
+                android:textSize="20sp"
+                />
+        </RelativeLayout>
+
+
+        <!--drawer layout-->
+        <RelativeLayout
+            android:id="@+id/drawer_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ListView
+                android:id="@+id/list_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"/>
+
+            <!--<TextView-->
+                <!--android:id="@+id/drawer_text"-->
+                <!--android:layout_width="match_parent"-->
+                <!--android:layout_height="match_parent"-->
+                <!--android:background="@color/colorAccent"-->
+                <!--android:gravity="center"-->
+                <!--android:layout_centerInParent="true"-->
+                <!--android:text="I'm Drawer"-->
+                <!--android:textSize="20sp"-->
+                <!--/>-->
+
+        </RelativeLayout>
+
+    </com.brucetoo.drawerview.DrawerLayout>
+
+</RelativeLayout>

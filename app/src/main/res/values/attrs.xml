@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="DrawerLayout">
+        <attr name="dragMaxWidth" format="dimension" />
+        <attr name="dragView" format="reference" />
+        <attr name="contentView" format="reference" />
+        <attr name="maskColor" format="color"/>
+        <attr name="maskEnable" format="boolean"/>
+    </declare-styleable>
+</resources>
