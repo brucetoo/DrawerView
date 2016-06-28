@@ -1,5 +1,8 @@
 package com.brucetoo.drawerview;
 
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -420,6 +423,39 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
      */
     public void setDragRatioListener(DragRatioListener listener) {
         this.mDragRatioListener = listener;
+    }
+
+    /**
+     * smooth move {@link DrawerLayout#mDragView} to exact value with duration
+     *
+     * @param toWidth  new width of {@link DrawerLayout#mDragView}
+     * @param duration duration about animation
+     */
+    public void smoothSlideTo(final int toWidth, long duration) {
+        if (toWidth != mDragViewLeft) {
+
+            ValueAnimator dragAnim = ValueAnimator.ofInt(mDragMaxWidth, toWidth);
+            dragAnim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    int value = (int) animation.getAnimatedValue();
+                    mDragView.getLayoutParams().width = value;
+                    mDragView.requestLayout();
+
+                    mDragMaxWidth = value;
+                    mDragViewLeft = mScreenWidth - value;
+                    requestLayout();
+                }
+            });
+            dragAnim.setDuration(duration);
+            dragAnim.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    mDragMaxWidth = mScreenWidth - toWidth;
+                }
+            });
+            dragAnim.start();
+        }
     }
 
     /**

@@ -1,11 +1,11 @@
 package com.brucetoo.drawerview;
 
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import com.joanzapata.android.BaseAdapterHelper;
 import com.joanzapata.android.QuickAdapter;
@@ -44,7 +44,11 @@ public class MainActivity extends AppCompatActivity {
         mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Toast.makeText(MainActivity.this, "Click drawer:" + position, Toast.LENGTH_SHORT).show();
+                if ((position + 1) % 2 == 0) {
+                    mDrawerLayout.smoothSlideTo((int) getResources().getDimension(R.dimen.drawer_bigger_width),500);
+                } else {
+                    mDrawerLayout.smoothSlideTo((int) getResources().getDimension(R.dimen.drawer_smaller_width),500);
+                }
             }
         });
 
@@ -63,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
 
         mDrawerLayout.setDragMaxWidth((int) getResources().getDimension(R.dimen.drawer_max_width));
         mDrawerLayout.setMaskEnable(true);
-        mDrawerLayout.setMaskColor(getResources().getColor(R.color.colorMask));
+        mDrawerLayout.setMaskColor(Color.parseColor("#77000000"));
     }
 
     private List<String> getListData() {

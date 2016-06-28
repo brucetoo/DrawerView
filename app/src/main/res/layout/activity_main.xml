@@ -37,7 +37,7 @@
 
 
         <!--drawer layout-->
-        <RelativeLayout
+        <FrameLayout
             android:id="@+id/drawer_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
@@ -48,17 +48,28 @@
                 android:layout_height="match_parent"/>
 
             <!--<TextView-->
-                <!--android:id="@+id/drawer_text"-->
-                <!--android:layout_width="match_parent"-->
+                <!--android:id="@+id/text_bigger"-->
+                <!--android:layout_width="250dp"-->
                 <!--android:layout_height="match_parent"-->
                 <!--android:background="@color/colorAccent"-->
                 <!--android:gravity="center"-->
-                <!--android:layout_centerInParent="true"-->
-                <!--android:text="I'm Drawer"-->
+                <!--android:text="I'm bigger text"-->
                 <!--android:textSize="20sp"-->
+                <!--android:visibility="gone"-->
                 <!--/>-->
 
-        </RelativeLayout>
+            <!--<TextView-->
+                <!--android:id="@+id/text_smaller"-->
+                <!--android:layout_width="150dp"-->
+                <!--android:layout_height="match_parent"-->
+                <!--android:background="@color/colorAccent"-->
+                <!--android:gravity="center"-->
+                <!--android:text="I'm smaller text"-->
+                <!--android:textSize="20sp"-->
+                <!--android:visibility="gone"-->
+                <!--/>-->
+
+        </FrameLayout>
 
     </com.brucetoo.drawerview.DrawerLayout>
 
