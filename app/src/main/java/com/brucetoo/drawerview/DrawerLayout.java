@@ -82,11 +82,12 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
         mMaskView.setBackgroundColor(mMaskColor);
         mMaskView.setVisibility(GONE);
 
-        //实例化ViewDragHelper
+        //Init ViewDragHelper
         mViewDragHelper = ViewDragHelper.create(this, 1.0f, new DragHelperCallBack());
-        //设置只能在右边距滑动时处理事件
+        //Only care about swipe from EDGE_RIGHT
         mViewDragHelper.setEdgeTrackingEnabled(ViewDragHelper.EDGE_RIGHT);
 
+        //left bound of dragView default equals screen width
         mDragViewLeft = mScreenWidth = context.getResources().getDisplayMetrics().widthPixels;
     }
 
@@ -112,25 +113,29 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
 //        Log.i(TAG, "onMeasure happened!");
-//        measureChildren(widthMeasureSpec, heightMeasureSpec);
+//        measureChildren(widthMeasureSpec, heightMeasureSpec);//ignore this,measure children separately
 
+        //get the extra width and height with spec
         int maxWidth = MeasureSpec.getSize(widthMeasureSpec);
         int maxHeight = MeasureSpec.getSize(heightMeasureSpec);
 
-        final int childCount = getChildCount() - (mMaskView == null ? 0 : 1);//减去maskView
+        final int childCount = getChildCount() - (mMaskView == null ? 0 : 1);//except maskView
 
-        if (childCount != 2) {//除了maskView,直接的子view只能有2个
+        if (childCount != 2) {//only have 2 children except maskView
             throw new IllegalArgumentException("Drawer layout must have exactly 2 children!");
         }
 
-        if (mDragMaxWidth > mScreenWidth) {//不允许最大的拖动距离大于屏幕的宽度
-            throw new IllegalArgumentException("Drawer width can't be great than screen width!");
+        if (mDragMaxWidth > mScreenWidth) {//dragMaxWidth can't be greater than screen width
+            throw new IllegalArgumentException("Drawer width can't be greater than screen width!");
         }
 
 
-        //TODO 在有padding margin值的时候可能宽高度不对
+        //TODO if there are padding or margin values in this ViewGroup,may has some problems
 
-        //处理dragView
+        /**
+         handle {@link mDragView} with layoutParams.
+         NOTE:if {@link mDragView} has exactly width,{@link mDragMaxWidth} is not available
+         */
         ViewGroup.LayoutParams dragParams = mDragView.getLayoutParams();
         int mDragViewWidthSpec;
         int mMaskViewWidthSpec;
@@ -145,17 +150,22 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
             mDragViewWidthSpec = MeasureSpec.makeMeasureSpec(dragParams.width, MeasureSpec.EXACTLY);
             mMaskViewWidthSpec = MeasureSpec.makeMeasureSpec(maxWidth - dragParams.width, MeasureSpec.EXACTLY);
         }
+        //measure {@link mDragView}
         mDragView.measure(mDragViewWidthSpec, heightMeasureSpec);
 
-        //处理ContentView
+        /**
+         * handle {@link mContentView}
+         * NOTE: the height and width must be MATCH_PARENT
+         */
         LayoutParams contentParams = mContentView.getLayoutParams();
-        //强制contentView的宽高都是 MATCH_PARENT
         mContentView.measure(widthMeasureSpec, heightMeasureSpec);
         if (contentParams.width != LayoutParams.MATCH_PARENT && contentParams.height == LayoutParams.MATCH_PARENT) {
             throw new IllegalArgumentException("Content View width/height must be MATCH_PARENT");
         }
 
-        //处理maskView
+        /**
+         * handle {@link mMaskView}
+         */
         mMaskView.measure(mMaskViewWidthSpec, heightMeasureSpec);
 
         setMeasuredDimension(maxWidth, maxHeight);
@@ -168,10 +178,9 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
         mDragView.layout(mDragViewLeft, 0, mDragViewLeft + mDragMaxWidth, b);
         mMaskView.layout(0, 0, mDragViewLeft, b);
 //        Log.i(TAG, "onLayout->mDragViewLeft->" + mDragViewLeft);
-        bringChildToFront(mDragView);//强制bring到前面
+        bringChildToFront(mDragView);//force bring dragView to front in case the wrong z value.
     }
 
-    //ViewDragHelper全权处理触摸事件
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         final int action = MotionEventCompat.getActionMasked(ev);
@@ -191,7 +200,7 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
                 float adx = Math.abs(moveX - mInitMotionX);
                 float ady = Math.abs(moveY - mInitMotionY);
                 int touchSlop = mViewDragHelper.getTouchSlop();
-                //必须是横向滚动 其他情况无效
+                //we only care about horizontal scroll
                 if (ady > adx && adx > touchSlop) {
                     mViewDragHelper.cancel();
                     return false;
@@ -204,6 +213,7 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        //let ViewDragHelper to handle touch event
         mViewDragHelper.processTouchEvent(event);
         float moveX = event.getX();
         float moveY = event.getY();
@@ -213,6 +223,7 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
                 mInitMotionY = moveY;
                 break;
             case MotionEvent.ACTION_UP:
+                //set open or close dragView according to mDragViewLeft when we ACTION_UP
                 if (mDragViewLeft > (getWidth() - mDragMaxWidth / 2)) {
                     closeDrawer();
                 } else {
@@ -231,7 +242,7 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
     @Override
     public void computeScroll() {
         /**
-         * viewDragHelper响应{@link android.widget.Scroller Scroller}
+         * viewDragHelper response {@link android.widget.Scroller Scroller}
          */
         if (mViewDragHelper.continueSettling(true)) {
             ViewCompat.postInvalidateOnAnimation(this);
@@ -257,11 +268,11 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
 
         @Override
         public void onEdgeDragStarted(int edgeFlags, int pointerId) {
-            //只监听右边距向内滑动
+            //only handle swipe right to left at right edge
             if (edgeFlags == ViewDragHelper.EDGE_RIGHT) {
                 Log.i(TAG, "onEdgeDragStarted:Left edge drag start");
                 mMaskView.setVisibility(VISIBLE);
-                if (!mIsMaskEnable) {//不允许mask渐变动画的时候,alpha设置0 可点击
+                if (!mIsMaskEnable) {//when disable mask animation,we need alpha==0 so it can be triggered
                     mMaskView.setAlpha(0);
                 }
                 mViewDragHelper.captureChildView(mDragView, pointerId);
@@ -275,8 +286,7 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
 //                Log.i(TAG, "clampViewPositionHorizontal");
                 float rectLeft = getWidth() - mDragMaxWidth;
                 float rectRight = getWidth();
-                //保证mDragView只能在 getWidth() - mDragMaxWidth 到 getWidth的范围内滚动
-                //滚动边界控制
+                //mDragView's drag bounds,left range must in rectLeft < left < rectRight
                 return (int) Math.min(Math.max(left, rectLeft), rectRight);
             } else {
                 return left;
@@ -319,8 +329,8 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
             mReleaseView = releasedChild;
             if (releasedChild == mDragView) {
                 Log.i(TAG, "onViewReleased");
-                //  速率  左 -> 右 正
-                //  速率  右 -> 左 负
+                //  horizontal x velocity:  left -> right  >0
+                //  horizontal x velocity:  right -> left  <0
                 if (xvel < 0 || (xvel == 0 && mDragRatio > 0.5f)) {
                     mViewDragHelper.settleCapturedViewAt(getWidth() - mDragMaxWidth, 0);
                 } else {
@@ -342,9 +352,9 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
     }
 
     /**
-     * 设置mask背景的颜色
+     * set the color of {@link DrawerLayout#mMaskView}
      *
-     * @param maskColor 颜色id
+     * @param maskColor color
      * @see DrawerLayout#mMaskColor
      */
     public void setMaskColor(@ColorInt int maskColor) {
@@ -355,9 +365,9 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
     }
 
     /**
-     * 是否允许mask渐变
+     * set enable mask animation or not
      *
-     * @param enable 默认true
+     * @param enable default is true
      * @see DrawerLayout#mIsMaskEnable
      */
     public void setMaskEnable(boolean enable) {
@@ -365,12 +375,12 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
     }
 
     /**
-     * 动态刷新{@link DrawerLayout#mDragMaxWidth}可拖动的最大宽度
-     * NOTE:不能大于屏幕宽度
-     * 如果{@link DrawerLayout#mDragView}的布局参数{@link android.view.ViewGroup.LayoutParams#width}
-     * 的值等于一个确切的值,则配置的{@link DrawerLayout#mDragMaxWidth}无效
+     * set the max value of {@link DrawerLayout#mDragMaxWidth}
+     * NOTE:dragMaxWidth can't be greater than screen width
+     * When {@link DrawerLayout#mDragView} has extra width,
+     * {@link DrawerLayout#mDragMaxWidth} will be invalid
      *
-     * @param dragMaxWidth 拖动的最大宽度(距离)
+     * @param dragMaxWidth max width can be dragged
      * @see DrawerLayout#onMeasure(int, int)
      */
     public void setDragMaxWidth(int dragMaxWidth) {
@@ -379,46 +389,47 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
     }
 
     /**
-     * 开启{@link DrawerLayout#mDragView}
+     * Open {@link DrawerLayout#mDragView}
      */
     public void openDrawer() {
         mMaskView.setVisibility(VISIBLE);
-        if (!mIsMaskEnable) {//不允许mask渐变动画的时候,alpha设置0 可点击
+        if (!mIsMaskEnable) {
             mMaskView.setAlpha(0);
         }
         smoothSlideToEdge(false);
     }
 
     /**
-     * 关闭{@link DrawerLayout#mDragView}
+     * Close {@link DrawerLayout#mDragView}
      */
     public void closeDrawer() {
         smoothSlideToEdge(true);
     }
 
     /**
-     * 判断{@link DrawerLayout#mDragView}是否显示
+     * get if {@link DrawerLayout#mDragView} is opened
      */
     public boolean isDrawerOpen() {
         return mDragViewLeft < (getWidth() - mDragMaxWidth / 2);
     }
 
     /**
-     * 设置开启{@link DrawerLayout#mDragView}过程中拖动的比例{@link DrawerLayout#mDragRatio}
-     * {@link DrawerLayout.DragRatioListener}
+     * set {@link DrawerLayout#mDragView} drag listener with {@link DrawerLayout#mDragRatio} callback
+     *
+     * @see DrawerLayout.DragRatioListener
      */
     public void setDragRatioListener(DragRatioListener listener) {
         this.mDragRatioListener = listener;
     }
 
     /**
-     * {@link DrawerLayout#mDragView}执行slide动画到 toEdge
-     * 主要是调用{@link ViewDragHelper#smoothSlideViewTo(View, int, int)}方法来滚动view
+     * smooth slide {@link DrawerLayout#mDragView} to edge
+     * drive by {@link ViewDragHelper#smoothSlideViewTo(View, int, int)} method
      *
-     * @param toEdge 是否滚到边界
+     * @param toEdge slide to edge?
      */
     private void smoothSlideToEdge(boolean toEdge) {
-        //根据实际情况考虑padding值是否算在内
+        //TODO maybe padding values need be considered
 //        final int leftBound = getPaddingLeft();
         int offset = 0;
         if (!toEdge) {
@@ -427,25 +438,22 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
             offset = getWidth();
         }
 
-        /**
-         * 如果继续执行{@link ViewDragHelper#continueSettling(boolean)}
-         * 在下一帧来之前手动invalidate一次
-         * */
         if (mViewDragHelper.smoothSlideViewTo(mDragView, offset, mDragView.getTop())) {
-            ViewCompat.postInvalidateOnAnimation(this);//否则可能会失真
+            //force invalidate before next frame comes.
+            ViewCompat.postInvalidateOnAnimation(this);
         }
     }
 
 
     /**
-     * 拖拽比例的监听
+     * The listener of drag happened
      */
     public interface DragRatioListener {
         /**
-         * 拖拽比例变化回调
+         * callback of ratio changed when drag
          *
-         * @param ratio    拖拽比
-         * @param dragView 监听的view
+         * @param ratio    drag ration
+         * @param dragView captured/dragged view
          */
         void onDragRatioChange(float ratio, View dragView);
     }
