@@ -446,7 +446,7 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
 
 
     /**
-     * The listener of drag happened
+     * the listener when drag happened
      */
     public interface DragRatioListener {
         /**
