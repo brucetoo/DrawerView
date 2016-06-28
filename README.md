@@ -1,4 +1,8 @@
 
+##DEMO EFFECT
+![DEMO](./demo.gif)
+
+
 ##ViewDragHelper使用总结
 
 1.实例化ViewDragHelper
