@@ -13,10 +13,10 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:contentView="@+id/content_view"
-        app:dragMaxWidth="200dp"
+        app:dragMaxWidth="0dp"
         app:dragView="@+id/drawer_view"
         app:maskEnable="true"
-        app:maskColor="#55000000">
+        app:maskColor="#00000000">
 
         <!--content layout-->
         <RelativeLayout

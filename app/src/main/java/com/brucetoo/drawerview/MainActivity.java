@@ -3,6 +3,7 @@ package com.brucetoo.drawerview;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
@@ -55,19 +56,23 @@ public class MainActivity extends AppCompatActivity {
 
         mDrawerLayout.setDragRatioListener(new DrawerLayout.DragRatioListener() {
             @Override
-            public void onDragRatioChange(float ratio, View dragView) {
+            public void onDragRatioChange(float ratio, View dragView,float dragDelta) {
                 //抛出dragView 在此可以做任意view动画
-                dragView.setAlpha(ratio);
-                dragView.setPivotX(dragView.getWidth() / 2);
-                dragView.setPivotY(dragView.getHeight() / 2);
-                dragView.setScaleX(ratio);
-                dragView.setScaleY(ratio);
+//                dragView.setAlpha(ratio);
+//                dragView.setPivotX(dragView.getWidth() / 2);
+//                dragView.setPivotY(dragView.getHeight() / 2);
+//                dragView.setScaleX(ratio);
+//                dragView.setScaleY(ratio);
+            }
+
+            @Override
+            public void onRelease2EdgeEnd() {
+                Log.e("onRelease2EdgeEnd", "onRelease2EdgeEnd");
             }
         });
 
-        mDrawerLayout.setDragMaxWidth((int) getResources().getDimension(R.dimen.drawer_max_width));
         mDrawerLayout.setMaskEnable(true);
-        mDrawerLayout.setMaskColor(Color.parseColor("#77000000"));
+        mDrawerLayout.setMaskColor(Color.parseColor("#00000000"));
     }
 
     private List<String> getListData() {

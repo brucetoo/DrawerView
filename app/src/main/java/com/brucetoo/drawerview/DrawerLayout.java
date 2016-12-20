@@ -17,6 +17,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 
 
 /**
@@ -36,7 +37,7 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
     private float mInitMotionX;
     private float mInitMotionY;
 
-    private int mDragMaxWidth;
+    private int mDragMaxWidth;//0 , default max width is screen width
     @IdRes
     private int mDragViewResId;
     @IdRes
@@ -48,11 +49,14 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
     private int mMaskColor;
 
     private int mDragViewLeft;
+    private int mDragViewTop;
     private int mScreenWidth;
+    private int mScreenHeight;
     private float mDragRatio;
     private View mReleaseView;
     private DragRatioListener mDragRatioListener;
     private boolean mIsMaskEnable;
+    private boolean mUserTouchHappened;
 
     public DrawerLayout(Context context) {
         this(context, null);
@@ -88,15 +92,26 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
         //Init ViewDragHelper
         mViewDragHelper = ViewDragHelper.create(this, 1.0f, new DragHelperCallBack());
         //Only care about swipe from EDGE_RIGHT
-        mViewDragHelper.setEdgeTrackingEnabled(ViewDragHelper.EDGE_RIGHT);
+        mViewDragHelper.setEdgeTrackingEnabled(ViewDragHelper.EDGE_RIGHT | ViewDragHelper.EDGE_BOTTOM);
 
         //left bound of dragView default equals screen width
         mDragViewLeft = mScreenWidth = context.getResources().getDisplayMetrics().widthPixels;
+        mScreenHeight = context.getResources().getDisplayMetrics().heightPixels;
+
+        getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                getViewTreeObserver().removeOnPreDrawListener(this);
+                openDrawer();
+                return false;
+            }
+        });
     }
 
     @Override
     protected void onFinishInflate() {
         super.onFinishInflate();
+        mUserTouchHappened = false;
         if (mDragViewResId != -1) {
             mDragView = findViewById(mDragViewResId);
 //            ViewGroup.LayoutParams params = mDragView.getLayoutParams();
@@ -130,6 +145,10 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
 
         if (mDragMaxWidth > mScreenWidth) {//dragMaxWidth can't be greater than screen width
             throw new IllegalArgumentException("Drawer width can't be greater than screen width!");
+        }
+
+        if (mDragMaxWidth == 0) {
+            mDragMaxWidth = mScreenWidth;
         }
 
 
@@ -178,7 +197,7 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
 
         mContentView.layout(0, 0, r, b);
-        mDragView.layout(mDragViewLeft, 0, mDragViewLeft + mDragMaxWidth, b);
+        mDragView.layout(mDragViewLeft, mDragViewTop, mDragViewLeft + mDragMaxWidth, b);
         mMaskView.layout(0, 0, mDragViewLeft, b);
 //        Log.i(TAG, "onLayout->mDragViewLeft->" + mDragViewLeft);
         bringChildToFront(mDragView);//force bring dragView to front in case the wrong z value.
@@ -196,6 +215,7 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
         float moveY = ev.getY();
         switch (action) {
             case MotionEvent.ACTION_DOWN:
+                mUserTouchHappened = true;
                 mInitMotionX = moveX;
                 mInitMotionY = moveY;
                 break;
@@ -222,6 +242,7 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
         float moveY = event.getY();
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                mUserTouchHappened = true;
                 mInitMotionX = moveX;
                 mInitMotionY = moveY;
                 break;
@@ -249,6 +270,10 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
          */
         if (mViewDragHelper.continueSettling(true)) {
             ViewCompat.postInvalidateOnAnimation(this);
+        } else {
+            if (mDragRatioListener != null && mDragViewLeft == mScreenWidth && mUserTouchHappened) {
+                mDragRatioListener.onRelease2EdgeEnd();
+            }
         }
     }
 
@@ -271,17 +296,29 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
 
         @Override
         public void onEdgeDragStarted(int edgeFlags, int pointerId) {
-            //only handle swipe right to left at right edge
-            if (edgeFlags == ViewDragHelper.EDGE_RIGHT) {
-                Log.i(TAG, "onEdgeDragStarted:Left edge drag start");
-                mMaskView.setVisibility(VISIBLE);
-                if (!mIsMaskEnable) {//when disable mask animation,we need alpha==0 so it can be triggered
-                    mMaskView.setAlpha(0);
-                }
-                mViewDragHelper.captureChildView(mDragView, pointerId);
+            switch (edgeFlags) {
+                case ViewDragHelper.EDGE_RIGHT:
+                    Log.i(TAG, "onEdgeDragStarted:to right edge drag start");
+                    mMaskView.setVisibility(VISIBLE);
+                    if (!mIsMaskEnable) {//when disable mask animation,we need alpha==0 so it can be triggered
+                        mMaskView.setAlpha(0);
+                    }
+                    mViewDragHelper.captureChildView(mDragView, pointerId);
+                    break;
+                case ViewDragHelper.EDGE_BOTTOM:
+                    Log.i(TAG, "onEdgeDragStarted:to bottom edge drag start");
+                    mViewDragHelper.captureChildView(mDragView, pointerId);
+                    break;
             }
         }
 
+        @Override
+        public int clampViewPositionVertical(View child, int top, int dy) {
+            if (child == mDragView) {
+                return constrain(top, 0, mScreenHeight);
+            }
+            return super.clampViewPositionVertical(child, top, dy);
+        }
 
         @Override
         public int clampViewPositionHorizontal(View child, int left, int dx) {
@@ -297,6 +334,11 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
         }
 
         @Override
+        public int getViewVerticalDragRange(View child) {
+            return mScreenHeight;
+        }
+
+        @Override
         public int getViewHorizontalDragRange(View child) {
             return mDragMaxWidth;
         }
@@ -306,9 +348,10 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
 
             if (changedView == mDragView) {
                 mDragViewLeft = left;
+                mDragViewTop = top;
                 mDragRatio = (float) (getWidth() - left) / mDragMaxWidth;
                 if (null != mDragRatioListener) {
-                    mDragRatioListener.onDragRatioChange(mDragRatio, mDragView);
+                    mDragRatioListener.onDragRatioChange(mDragRatio, mDragView, getWidth() - left);
                 }
 
                 if (mIsMaskEnable) {
@@ -331,7 +374,7 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
         public void onViewReleased(View releasedChild, float xvel, float yvel) {
             mReleaseView = releasedChild;
             if (releasedChild == mDragView) {
-                Log.i(TAG, "onViewReleased");
+                Log.i(TAG, "onViewReleased" + " xvel:" + xvel + " yvel:" + yvel);
                 //  horizontal x velocity:  left -> right  >0
                 //  horizontal x velocity:  right -> left  <0
                 if (xvel < 0 || (xvel == 0 && mDragRatio > 0.5f)) {
@@ -480,6 +523,10 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
         }
     }
 
+    private int constrain(int amount, int low, int high) {
+        return amount < low ? low : (amount > high ? high : amount);
+    }
+
 
     /**
      * the listener when drag happened
@@ -488,9 +535,16 @@ public class DrawerLayout extends ViewGroup implements View.OnClickListener {
         /**
          * callback of ratio changed when drag
          *
-         * @param ratio    drag ration
-         * @param dragView captured/dragged view
+         * @param ratio     drag ration
+         * @param dragView  captured/dragged view
+         * @param dragDelta drag delta of dragged view
          */
-        void onDragRatioChange(float ratio, View dragView);
+        void onDragRatioChange(float ratio, View dragView, float dragDelta);
+
+        /**
+         * callback when release state is IDLE
+         * Only be called when close drawer end.
+         */
+        void onRelease2EdgeEnd();
     }
 }
