@@ -54,9 +54,11 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
+        mDrawerLayout.setListView(mListView);
         mDrawerLayout.setDragRatioListener(new DrawerLayout.DragRatioListener() {
             @Override
             public void onDragRatioChange(float ratio, View dragView,float dragDelta) {
+                Log.e("onDragRatioChange", "ratio:" + ratio);
                 //抛出dragView 在此可以做任意view动画
 //                dragView.setAlpha(ratio);
 //                dragView.setPivotX(dragView.getWidth() / 2);
@@ -86,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         if (mDrawerLayout.isDrawerOpen()) {
-            mDrawerLayout.closeDrawer();
+            mDrawerLayout.closeDrawer(true);
         } else {
             super.onBackPressed();
         }
@@ -94,9 +96,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void toggleDrawer() {
         if (mDrawerLayout.isDrawerOpen()) {
-            mDrawerLayout.closeDrawer();
+            mDrawerLayout.closeDrawer(true);
         } else {
-            mDrawerLayout.openDrawer();
+            mDrawerLayout.openDrawer(true);
         }
     }
 
